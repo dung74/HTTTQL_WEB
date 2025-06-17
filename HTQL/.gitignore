@@ -1,0 +1,4 @@
+/node_modules
+.env
+/Pharm Data.xlsx
+/insertDB.js
