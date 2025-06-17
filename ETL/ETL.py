@@ -10,6 +10,7 @@ import json
 import subprocess
 from pathlib import Path
 import time
+import shutil
 
 
 SSAS_SQL_USER = "sa"
@@ -63,9 +64,18 @@ def transform_data(data_dict):
             'date': orders_dates.dt.date.unique(),
         })
         unique_dates['time_id'] = range(1, len(unique_dates) + 1)
-        unique_dates['Year'] = pd.DatetimeIndex(unique_dates['date']).year
+        unique_dates['Year'] = pd.DatetimeIndex(unique_dates['date']).year.astype(str)
+        # Tháng tiếng Anh
         unique_dates['Month'] = pd.DatetimeIndex(unique_dates['date']).month
+        month_names = {
+            1: 'January', 2: 'February', 3: 'March', 4: 'April',
+            5: 'May', 6: 'June', 7: 'July', 8: 'August',
+            9: 'September', 10: 'October', 11: 'November', 12: 'December'
+        }
+        unique_dates['Month'] = unique_dates['Month'].map(month_names)
+        # Quý dạng Q1, Q2, ...
         unique_dates['quarter'] = pd.DatetimeIndex(unique_dates['date']).quarter
+        unique_dates['quarter'] = unique_dates['quarter'].apply(lambda x: f"Q{x}")
         df_time = unique_dates[['time_id', 'Month', 'quarter', 'Year']]
         
         # 3. Customer
@@ -262,6 +272,13 @@ catch {{
             timeout=300  # 5 phút timeout
         )
 
+        # Xóa toàn bộ folder export_dir sau khi chạy xong
+        try:
+            if export_dir.exists() and export_dir.is_dir():
+                shutil.rmtree(export_dir)
+        except Exception as cleanup_err:
+            logger.warning(f"Lỗi khi xóa folder tạm: {cleanup_err}")
+
         if "SUCCESS" in result.stdout:
             logger.info("SSAS đã được cập nhật thành công qua PowerShell!")
             return True
@@ -270,6 +287,12 @@ catch {{
             return False
     except Exception as e:
         logger.error(f"Lỗi khi thực thi PowerShell: {str(e)}")
+        # Xóa folder nếu có lỗi
+        try:
+            if export_dir.exists() and export_dir.is_dir():
+                shutil.rmtree(export_dir)
+        except Exception as cleanup_err:
+            logger.warning(f"Lỗi khi xóa folder tạm: {cleanup_err}")
         return False
 
 def export_to_sqlserver(transformed_data):
