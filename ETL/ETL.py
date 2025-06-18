@@ -19,11 +19,11 @@ SSAS_SQL_PASSWORD = "123456"
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 # Cấu hình logging với UTF-8
-log_dir = Path("logs")
-log_dir.mkdir(exist_ok=True)
-log_file = log_dir / f"etl_log_{datetime.datetime.now().strftime('%Y%m%d')}.log"
+# log_dir = Path("logs")
+# log_dir.mkdir(exist_ok=True)
+# log_file = log_dir / f"etl_log_{datetime.datetime.now().strftime('%Y%m%d')}.log"
 
-handler = logging.FileHandler(log_file, encoding='utf-8')
+# handler = logging.FileHandler(log_file, encoding='utf-8')
 console_handler = logging.StreamHandler(sys.stdout)
 
 logging.basicConfig(
@@ -39,8 +39,8 @@ SSAS_DATABASE = "17_6_2026_HTTTQL"
 SSAS_CUBE_NAME = "WH For HTQL"          # Tên cube
 
 # Thư mục chứa dữ liệu xuất ra
-OUTPUT_DIR = Path("output_data")
-OUTPUT_DIR.mkdir(exist_ok=True)
+# OUTPUT_DIR = Path("output_data")
+# OUTPUT_DIR.mkdir(exist_ok=True)
 
 
 
@@ -144,92 +144,11 @@ def transform_data(data_dict):
         logger.error(traceback.format_exc())
         return None
 
-def export_to_csv(transformed_data, export_dir):
-    """Xuất dữ liệu ra file CSV"""
-    if not transformed_data:
-        logger.warning("Không có dữ liệu để xuất")
-        return None
-    
-    try:
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        
-        # Tạo thư mục cho lần xuất dữ liệu này
-        export_dir = OUTPUT_DIR / f"export_{timestamp}"
-        export_dir.mkdir(exist_ok=True)
-        
-        # Đặt tên file CSV đúng như Data Source View
-        csv_file_names = {
-            "Fact": "Fact.csv",
-            "Product": "Product.csv",
-            "Time": "Time.csv",
-            "Customer": "Customer.csv",
-            "Customer_type": "Customer_type.csv",
-            "Customer_location": "Customer_location.csv",
-            "Distributor": "distributor.csv",      # Chữ thường như trong DSV
-            "Sales_rep": "Sales_rep.csv"
-        }
-        for table, df in transformed_data.items():
-            file_name = csv_file_names.get(table, f"{table}.csv")
-            file_path = export_dir / file_name
-            df.to_csv(file_path, index=False, encoding='utf-8')
-            logger.info(f"Đã xuất bảng {table} ra file {file_path}")
-        
-        # Tạo file schema.json để lưu thông tin cấu trúc dữ liệu
-        schema_info = {}
-        for table_name, df in transformed_data.items():
-            schema_info[table_name] = {
-                "columns": list(df.columns),
-                "dtypes": {col: str(df[col].dtype) for col in df.columns},
-                "row_count": len(df)
-            }
-            
-        with open(export_dir / "schema.json", "w", encoding='utf-8') as f:
-            json.dump(schema_info, f, indent=2, ensure_ascii=False)
-        
-        # Tạo file đánh dấu thời gian xuất gần nhất
-        with open(OUTPUT_DIR / "latest_export.txt", "w", encoding='utf-8') as f:
-            f.write(timestamp)
-        
-        logger.info(f"Tất cả dữ liệu đã được xuất ra thư mục {export_dir}")
-        return export_dir
-        
-    except Exception as e:
-        logger.error(f"Lỗi khi xuất dữ liệu: {str(e)}")
-        logger.error(traceback.format_exc())
-        return None
-
-def create_xmla_script(export_dir):
-    """Tạo script XMLA để process SSAS database"""
-    logger.info("Tạo script XMLA để process SSAS database...")
-    
-    # Tạo XMLA script
-    xmla_script = f"""
-<Batch xmlns="http://schemas.microsoft.com/analysisservices/2003/engine">
-  <Parallel>
-    <Process xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-      <Object>
-        <DatabaseID>{SSAS_DATABASE}</DatabaseID>
-      </Object>
-      <Type>ProcessFull</Type>
-      <WriteBackTableCreation>UseExisting</WriteBackTableCreation>
-    </Process>
-  </Parallel>
-</Batch>
-"""
-    
-    # Lưu script XMLA với UTF-8 encoding
-    xmla_path = export_dir / "process_ssas.xmla"
-    with open(xmla_path, "w", encoding='utf-8') as f:
-        f.write(xmla_script)
-    
-    logger.info(f"Đã tạo script XMLA tại {xmla_path}")
-    return xmla_path
-
 def auto_process_ssas(export_dir):
     logger.info("Đang tự động cập nhật SSAS database...")
 
     # Tạo XMLA script
-    xmla_path = create_xmla_script(export_dir)
+    # xmla_path = create_xmla_script(export_dir)
 
     # Sử dụng PowerShell trực tiếp
     logger.info("Sử dụng PowerShell để process SSAS...")
@@ -256,7 +175,7 @@ catch {{
 """
 
     # Lưu PowerShell script
-    ps_path = export_dir / "auto_process.ps1"
+    ps_path = Path("auto_process.ps1")
     with open(ps_path, "w", encoding='utf-8') as f:
         f.write(ps_script)
 
@@ -271,11 +190,11 @@ catch {{
         )
 
         # Xóa toàn bộ folder export_dir sau khi chạy xong
-        try:
-            if export_dir.exists() and export_dir.is_dir():
-                shutil.rmtree(export_dir)
-        except Exception as cleanup_err:
-            logger.warning(f"Lỗi khi xóa folder tạm: {cleanup_err}")
+        # try:
+        #     if ps_path.exists():
+        #         ps_path.unlink()
+        # except Exception as cleanup_err:
+        #     logger.warning(f"Lỗi khi xóa file tạm: {cleanup_err}")
 
         if "SUCCESS" in result.stdout:
             logger.info("SSAS đã được cập nhật thành công qua PowerShell!")
@@ -287,10 +206,10 @@ catch {{
         logger.error(f"Lỗi khi thực thi PowerShell: {str(e)}")
         # Xóa folder nếu có lỗi
         try:
-            if export_dir.exists() and export_dir.is_dir():
-                shutil.rmtree(export_dir)
+            if ps_path.exists():
+                ps_path.unlink()
         except Exception as cleanup_err:
-            logger.warning(f"Lỗi khi xóa folder tạm: {cleanup_err}")
+            logger.warning(f"Lỗi khi xóa file tạm: {cleanup_err}")
         return False
 
 def export_to_sqlserver(transformed_data):
@@ -427,9 +346,7 @@ def etl_process():
 
     # Tự động cập nhật SSAS
     logger.info("Bắt đầu quá trình tự động cập nhật SSAS...")
-    export_dir = OUTPUT_DIR / f"process_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    export_dir.mkdir(exist_ok=True)
-    success = auto_process_ssas(export_dir)
+    success = auto_process_ssas(Path.cwd())  # Truyền thư mục hiện tại hoặc một thư mục tạm bất kỳ
     
     end_time = datetime.datetime.now()
     duration = (end_time - start_time).total_seconds()
