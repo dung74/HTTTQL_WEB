@@ -29,7 +29,7 @@ console_handler = logging.StreamHandler(sys.stdout)
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[handler, console_handler]
+    handlers=[console_handler]
 )
 
 logger = logging.getLogger(__name__)
