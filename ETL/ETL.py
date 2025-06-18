@@ -34,9 +34,8 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# CẤU HÌNH SSAS - Điều chỉnh theo môi trường của bạn
-SSAS_SERVER = "localhost"       # Server SSAS
-SSAS_DATABASE = "17_6_2026_HTTTQL"      # Database SSAS đã tồn tại
+SSAS_SERVER = "localhost"       
+SSAS_DATABASE = "17_6_2026_HTTTQL"      
 SSAS_CUBE_NAME = "WH For HTQL"          # Tên cube
 
 # Thư mục chứa dữ liệu xuất ra
@@ -227,14 +226,13 @@ def create_xmla_script(export_dir):
     return xmla_path
 
 def auto_process_ssas(export_dir):
-    """Tự động cập nhật SSAS chỉ với PowerShell (phương pháp 1)"""
     logger.info("Đang tự động cập nhật SSAS database...")
 
     # Tạo XMLA script
     xmla_path = create_xmla_script(export_dir)
 
-    # PHƯƠNG PHÁP 1: Sử dụng PowerShell trực tiếp
-    logger.info("Phương pháp 1: Sử dụng PowerShell để process SSAS...")
+    # Sử dụng PowerShell trực tiếp
+    logger.info("Sử dụng PowerShell để process SSAS...")
 
     ps_script = f"""
 try {{
@@ -371,7 +369,6 @@ def export_to_sqlserver(transformed_data):
         return False
 
 def extract_data_from_db():
-    """Trích xuất dữ liệu từ database nguồn (HTQL) thay vì tạo dữ liệu mẫu"""
     logger.info("Đang trích xuất dữ liệu từ database nguồn HTQL...")
     conn_str = (
         "DRIVER={SQL Server};"
